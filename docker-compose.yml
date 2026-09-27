@@ -1,0 +1,61 @@
+version: '3.8'
+
+services:
+  # 1. PostgreSQL Database with RLS
+  postgres:
+    image: postgres:16-alpine
+    container_name: echotrace-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: echotrace_user
+      POSTGRES_PASSWORD: echotrace_secure_password_2026
+      POSTGRES_DB: echotrace_production
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./database/schema.sql:/docker-entrypoint-initdb.d/init.sql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U echotrace_user -d echotrace_production"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  # 2. Redis with AOF persistence enabled for durable streams
+  redis:
+    image: redis:7.2-alpine
+    container_name: echotrace-redis
+    restart: unless-stopped
+    command: ["redis-server", "--appendonly", "yes", "--appendfsync", "everysec"]
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  # 3. EchoTrace Ingestion, API & Pipeline Workers
+  echotrace-app:
+    build: .
+    container_name: echotrace-app
+    restart: unless-stopped
+    ports:
+      - "4000:4000"
+    environment:
+      NODE_ENV: production
+      PORT: 4000
+      DATABASE_URL: postgres://echotrace_user:echotrace_secure_password_2026@postgres:5432/echotrace_production
+      REDIS_URL: redis://redis:6379
+      ELEVENLABS_WEBHOOK_SECRET: whsec_elevenlabs_production_super_secret_key_2026
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+volumes:
+  postgres_data:
+  redis_data:
