@@ -125,6 +125,10 @@ export default function App() {
 
   const handleSelectCall = (callId) => {
     setSelectedCallId(callId);
+    const existing = calls.find(c => c.call_id === callId);
+    if (existing) {
+      setSelectedCallData({ call: existing, score: existing.score });
+    }
     setActiveTab('calls');
   };
 
@@ -216,10 +220,13 @@ export default function App() {
 
         {/* Tab 4: Call Explorer & Audio Timeline */}
         {activeTab === 'calls' && (
-          selectedCallId && selectedCallData ? (
+          selectedCallId ? (
             <CallTimeline
-              callData={selectedCallData}
-              onBack={() => setSelectedCallId(null)}
+              callData={selectedCallData || (calls.find(c => c.call_id === selectedCallId) ? { call: calls.find(c => c.call_id === selectedCallId), score: calls.find(c => c.call_id === selectedCallId)?.score } : null)}
+              onBack={() => {
+                setSelectedCallId(null);
+                setSelectedCallData(null);
+              }}
             />
           ) : (
             <CallsList

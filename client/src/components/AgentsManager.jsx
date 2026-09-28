@@ -18,9 +18,13 @@ export default function AgentsManager({ agents = [], onSelectAgent, onNavigateTa
     setError(null);
 
     try {
-      const res = await fetch(`${apiBase}/api/agents`, {
+      const base = apiBase || (typeof window !== 'undefined' ? window.location.origin : '');
+      const res = await fetch(`${base}/api/agents`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          'x-org-id': '00000000-0000-0000-0000-000000000001'
+        },
         body: JSON.stringify({
           agent_id: agentId.trim().toLowerCase().replace(/\s+/g, '-'),
           name: name.trim(),
@@ -147,8 +151,36 @@ export default function AgentsManager({ agents = [], onSelectAgent, onNavigateTa
 
       {/* Register Agent Modal - Apple Sheet Aesthetic */}
       {isCreateOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/30 backdrop-blur-md">
-          <div className="bg-white border border-black/[0.08] rounded-[22px] w-full max-w-md p-7 space-y-5 shadow-2xl relative">
+        <div
+          className="fixed inset-0 flex items-center justify-center p-4"
+          style={{
+            position: 'fixed',
+            inset: 0,
+            zIndex: 99999,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: '1rem',
+            backgroundColor: 'rgba(0, 0, 0, 0.55)',
+            backdropFilter: 'blur(10px)',
+            WebkitBackdropFilter: 'blur(10px)'
+          }}
+        >
+          <div
+            style={{
+              backgroundColor: '#FFFFFF',
+              border: '1px solid rgba(0, 0, 0, 0.1)',
+              borderRadius: '22px',
+              width: '100%',
+              maxWidth: '30rem',
+              padding: '1.75rem',
+              boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.35)',
+              position: 'relative',
+              maxHeight: '90vh',
+              overflowY: 'auto'
+            }}
+            className="space-y-5"
+          >
             <div className="flex items-center justify-between pb-3 border-b border-black/[0.06]">
               <div>
                 <h2 className="text-base font-semibold text-[#1D1D1F]">Register Voice Agent</h2>

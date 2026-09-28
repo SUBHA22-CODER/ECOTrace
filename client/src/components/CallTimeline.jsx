@@ -5,7 +5,7 @@ import AudioWaveformPlayer from './AudioWaveformPlayer';
 export default function CallTimeline({ callData, onBack }) {
   const [activeTurn, setActiveTurn] = useState(0);
 
-  if (!callData || !callData.call) {
+  if (!callData) {
     return (
       <div className="eleven-card p-12 text-center text-sm text-[#45433E] font-medium border border-black/[0.08]">
         Select a call from the explorer to inspect its complete timeline and LLM-as-judge audit breakdown.
@@ -13,7 +13,10 @@ export default function CallTimeline({ callData, onBack }) {
     );
   }
 
-  const { call, score = {}, contract = {}, audits = [] } = callData;
+  const call = callData.call || callData;
+  const score = callData.score || call.score || {};
+  const contract = callData.contract || {};
+  const audits = callData.audits || [];
   const transcript = call.transcript || [];
   const flags = score.compliance_flags || [];
   const flowChecklist = score.flow_checklist || {};
