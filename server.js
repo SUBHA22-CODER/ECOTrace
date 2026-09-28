@@ -8,6 +8,7 @@ const express = require('express');
 const cors = require('cors');
 const crypto = require('crypto');
 const path = require('path');
+const fs = require('fs');
 const { localStore } = require('./database/db');
 const { queueManager } = require('./services/workers/queue-manager');
 const { normalizerWorker } = require('./services/workers/normalizer');
@@ -1133,17 +1134,55 @@ async function startWorkers() {
   rollupManager.start(30000);
 }
 
-// Serve built React client assets
+// Ensure React client bundle exists on boot (auto-build on Render/Heroku if missing)
 const distPath = path.join(__dirname, 'client', 'dist');
+const altDistPath = path.join(__dirname, 'dist');
+
+if (!fs.existsSync(path.join(distPath, 'index.html')) && !fs.existsSync(path.join(altDistPath, 'index.html'))) {
+  if (fs.existsSync(path.join(__dirname, 'client', 'package.json'))) {
+    console.log('⚡ [EchoTrace] client/dist not detected. Compiling React client bundle automatically...');
+    try {
+      const { execSync } = require('child_process');
+      execSync('npm --prefix client install && npm --prefix client run build', { stdio: 'inherit' });
+      console.log('✅ [EchoTrace] Client compiled successfully on boot!');
+    } catch (err) {
+      console.error('⚠️ [EchoTrace] Automated client build warning:', err.message);
+    }
+  }
+}
+
+// Serve built React client assets
 app.use(express.static(distPath));
+app.use(express.static(altDistPath));
+
 app.get('*', (req, res, next) => {
   if (req.path.startsWith('/api') || req.path.startsWith('/webhooks')) {
     return next();
   }
-  const indexPath = path.join(distPath, 'index.html');
-  res.sendFile(indexPath, (err) => {
-    if (err) next();
-  });
+  
+  const primaryIndex = path.join(distPath, 'index.html');
+  const fallbackIndex = path.join(altDistPath, 'index.html');
+
+  if (fs.existsSync(primaryIndex)) {
+    return res.sendFile(primaryIndex);
+  }
+  if (fs.existsSync(fallbackIndex)) {
+    return res.sendFile(fallbackIndex);
+  }
+
+  // Graceful fallback response if static files are completely absent
+  res.status(200).send(`
+    <!DOCTYPE html>
+    <html>
+      <head><title>EchoTrace Control Plane</title></head>
+      <body style="margin:0; background:#0E0F11; color:white; font-family:-apple-system,system-ui,sans-serif; display:flex; align-items:center; justify-content:center; height:100vh;">
+        <div style="text-align:center; max-width:480px; padding:32px; border:1px solid rgba(255,255,255,0.1); border-radius:16px;">
+          <h2 style="margin-top:0;">EchoTrace Engine Running 🚀</h2>
+          <p style="color:#A1A1AA; font-size:14px; line-height:1.6;">Backend APIs & Webhook receivers are healthy.<br>Run <code>npm run build</code> in the root directory to build the dashboard.</p>
+        </div>
+      </body>
+    </html>
+  `);
 });
 
 // Always seed in-memory store so serverless functions have active data
