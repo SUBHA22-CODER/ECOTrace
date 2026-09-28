@@ -4,6 +4,8 @@
   "description": "Observability & QA layer for ElevenLabs voice agents",
   "main": "server.js",
   "scripts": {
+    "build": "cd client && npm install && npm run build",
+    "start": "node server.js",
     "server": "node server.js",
     "client": "npm run dev --prefix client",
     "dev": "concurrently \"npm run server\" \"npm run client\"",

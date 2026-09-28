@@ -1146,9 +1146,11 @@ app.get('*', (req, res, next) => {
   });
 });
 
+// Always seed in-memory store so serverless functions have active data
+seedInitialData();
+
 // Boot server
 if (require.main === module) {
-  seedInitialData();
   startWorkers();
 
   const server = app.listen(PORT, () => {
