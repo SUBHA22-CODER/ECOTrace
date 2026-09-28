@@ -1138,7 +1138,7 @@ async function startWorkers() {
 const distPath = path.join(__dirname, 'client', 'dist');
 const altDistPath = path.join(__dirname, 'dist');
 
-if (!fs.existsSync(path.join(distPath, 'index.html')) && !fs.existsSync(path.join(altDistPath, 'index.html'))) {
+if (!process.env.VERCEL && !fs.existsSync(path.join(distPath, 'index.html')) && !fs.existsSync(path.join(altDistPath, 'index.html'))) {
   if (fs.existsSync(path.join(__dirname, 'client', 'package.json'))) {
     console.log('⚡ [EchoTrace] client/dist not detected. Compiling React client bundle automatically...');
     try {
